@@ -1,0 +1,39 @@
+
+syntax = "proto3";
+
+package test;
+
+import "google/api/annotations.proto";
+
+option go_package = "test/pb";
+
+message TestRequest {
+  string name = 1;
+  int32 age = 2;
+  repeated string tags = 3;
+  optional string email = 4;
+}
+
+message TestResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message GetTestRequest {
+  string id = 1;
+}
+
+service TestService {
+  rpc CreateTest(TestRequest) returns (TestResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/test"
+      body: "*"
+    };
+  }
+  
+  rpc GetTest(GetTestRequest) returns (TestResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/test/{id}"
+    };
+  }
+}
