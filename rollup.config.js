@@ -81,7 +81,7 @@ export default defineConfig([
     plugins
   },
 
-  // CLI bundle
+  // CLI bundle - bundle protobufjs but keep other externals
   {
     input: 'src/cli.ts',
     output: {
@@ -90,7 +90,7 @@ export default defineConfig([
       sourcemap: true,
       banner: '#!/usr/bin/env node'
     },
-    external: [...external, 'fs', 'path', 'process'],
+    external: ['fs', 'path', 'process'],
     plugins
   },
 

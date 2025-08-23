@@ -1,6 +1,6 @@
 {
   "name": "proto2fetch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Generate TypeScript-friendly API client from protobuf definitions with ky HTTP client",
   "keywords": [
@@ -57,7 +57,8 @@
     "release": "changeset publish"
   },
   "dependencies": {
-    "ky": "^1.9.0"
+    "ky": "^1.9.0",
+    "protobufjs": "^7.5.4"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.6",
@@ -72,7 +73,6 @@
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "eslint": "^9.34.0",
-    "protobufjs": "^7.5.4",
     "rollup": "^4.48.0",
     "rollup-plugin-dts": "^6.2.3",
     "tslib": "^2.8.1",
