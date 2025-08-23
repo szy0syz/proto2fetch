@@ -68,7 +68,7 @@ function printVersion(): void {
   try {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     console.log(`proto2fetch v${packageJson.version}`);
-  } catch (error) {
+  } catch {
     console.log('proto2fetch v1.0.0');
   }
 }

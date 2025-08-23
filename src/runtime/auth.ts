@@ -93,7 +93,7 @@ export class AuthManager {
       this.isRefreshing = false;
       
       return newToken;
-    } catch (error) {
+    } catch {
       this.isRefreshing = false;
       this.token = undefined;
       throw ErrorUtils.authError('Failed to refresh authentication token');
@@ -140,7 +140,7 @@ export class JWTUtils {
       }
       const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
       return JSON.parse(decodedPayload);
-    } catch (error) {
+    } catch {
       throw ErrorUtils.authError('Invalid JWT token format');
     }
   }
@@ -159,7 +159,7 @@ export class JWTUtils {
 
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp < currentTime;
-    } catch (error) {
+    } catch {
       // If we can't parse the token, consider it expired
       return true;
     }
@@ -177,7 +177,7 @@ export class JWTUtils {
       }
 
       return new Date(payload.exp * 1000);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -197,7 +197,7 @@ export class JWTUtils {
       const timeRemaining = payload.exp - currentTime;
       
       return Math.max(0, timeRemaining);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -254,7 +254,7 @@ export class JWTAuthManager extends AuthManager {
       // Token is already expired, try to refresh
       try {
         return await this.refreshToken();
-      } catch (error) {
+      } catch {
         return undefined;
       }
     }
@@ -264,7 +264,7 @@ export class JWTAuthManager extends AuthManager {
       // Token will expire soon, try to refresh
       try {
         return await this.refreshToken();
-      } catch (error) {
+      } catch {
         // If refresh fails but token is still valid, use it
         return JWTUtils.isTokenExpired(token) ? undefined : token;
       }
@@ -291,8 +291,8 @@ export class JWTAuthManager extends AuthManager {
     this.refreshTimer = setTimeout(async () => {
       try {
         await this.refreshToken();
-      } catch (error) {
-        console.error('Auto-refresh failed:', error);
+      } catch (err) {
+        console.error('Auto-refresh failed:', err);
       }
     }, refreshTime);
   }

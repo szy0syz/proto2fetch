@@ -75,14 +75,14 @@ export interface APIClientConfig {
 export interface CacheConfig {
   enabled: boolean;
   ttl?: number;
-  keyGenerator?: (method: string, args: any[]) => string;
+  keyGenerator?: (_method: string, _args: any[]) => string;
   storage?: 'memory' | 'localStorage' | 'sessionStorage';
 }
 
-export type RequestHook = (request: Request) => Request | Promise<Request>;
-export type RetryHook = (request: Request, error: Error, retryCount: number) => void | Promise<void>;
-export type ErrorHook = (error: Error) => Error | Promise<Error>;
-export type ResponseHook = (request: Request, response: Response) => Response | Promise<Response>;
+export type RequestHook = (_request: Request) => Request | Promise<Request>;
+export type RetryHook = (_request: Request, _error: Error, _retryCount: number) => void | Promise<void>;
+export type ErrorHook = (_error: Error) => Error | Promise<Error>;
+export type ResponseHook = (_request: Request, _response: Response) => Response | Promise<Response>;
 
 export interface RequestOptions extends Omit<KyOptions, 'prefixUrl'> {
   pathParams?: Record<string, string | number>;

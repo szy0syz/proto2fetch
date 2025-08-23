@@ -6,6 +6,7 @@ import type {
 } from '../types/index.js';
 
 export class APIClientGenerator {
+  // eslint-disable-next-line no-unused-vars
   constructor(private options: ClientGeneratorOptions) {}
 
   generateClient(schema: ParsedSchema): string {

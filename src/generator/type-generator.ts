@@ -6,6 +6,7 @@ import type {
 } from '../types/index.js';
 
 export class TypeScriptTypeGenerator {
+  // eslint-disable-next-line no-unused-vars
   constructor(private options: TypeMappingOptions = {}) {}
 
   generateTypes(schema: ParsedSchema): string {

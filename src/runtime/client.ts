@@ -10,13 +10,13 @@ import { AuthManager } from './auth.js';
 
 export interface APIClient {
   request<T = any>(
-    method: string,
-    path: string,
-    data?: any,
-    options?: RequestOptions
+    _method: string,
+    _path: string,
+    _data?: any,
+    _options?: RequestOptions
   ): Promise<T>;
-  objectToSearchParams(obj: Record<string, any>): URLSearchParams;
-  setAuthToken(token: string): void;
+  objectToSearchParams(_obj: Record<string, any>): URLSearchParams;
+  setAuthToken(_token: string): void;
   clearAuthToken(): void;
 }
 

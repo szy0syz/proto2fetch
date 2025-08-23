@@ -16,10 +16,10 @@ export class Proto2FetchGenerator {
   private typeGenerator: TypeScriptTypeGenerator;
   private clientGenerator: APIClientGenerator;
 
-  constructor(private options: GeneratorOptions) {
+  constructor(private _options: GeneratorOptions) {
     // Configure parser options
     const parseOptions: ProtoParseOptions = {
-      includePath: [this.options.protoPath],
+      includePath: [this._options.protoPath],
       keepCase: true,
       alternateCommentMode: true,
       preferTrailingComment: true
@@ -27,18 +27,18 @@ export class Proto2FetchGenerator {
 
     // Configure type mapping options
     const typeMappingOptions: TypeMappingOptions = {
-      dateAsString: this.options.dateType === 'string',
-      bigintAsString: this.options.bigintType === 'string',
+      dateAsString: this._options.dateType === 'string',
+      bigintAsString: this._options.bigintType === 'string',
       useOptionalForOptionalFields: true
     };
 
     // Configure client generator options
     const clientOptions: ClientGeneratorOptions = {
-      clientName: this.options.clientName || 'APIClient',
-      baseUrl: this.options.baseUrl || 'http://localhost:3000',
-      generateComments: this.options.includeComments ?? true,
-      generateFilterBuilders: this.options.generateFilterBuilders ?? true,
-      generateSortBuilders: this.options.generateSortBuilders ?? true
+      clientName: this._options.clientName || 'APIClient',
+      baseUrl: this._options.baseUrl || 'http://localhost:3000',
+      generateComments: this._options.includeComments ?? true,
+      generateFilterBuilders: this._options.generateFilterBuilders ?? true,
+      generateSortBuilders: this._options.generateSortBuilders ?? true
     };
 
     this.parser = createParser(parseOptions);
@@ -54,7 +54,7 @@ export class Proto2FetchGenerator {
     
     // Parse protobuf files
     console.log('📖 Parsing protobuf files...');
-    const schema = await this.parser.parseFromDirectory(this.options.protoPath);
+    const schema = await this.parser.parseFromDirectory(this._options.protoPath);
     
     console.log(`✅ Parsed ${schema.files.length} proto files`);
     console.log(`   - ${schema.files.flatMap(f => f.services).length} services`);
@@ -80,12 +80,12 @@ export class Proto2FetchGenerator {
     await this.generateReadme(schema);
 
     console.log('✅ Generation completed successfully!');
-    console.log(`📦 Output directory: ${this.options.outputDir}`);
+    console.log(`📦 Output directory: ${this._options.outputDir}`);
   }
 
   private async ensureOutputDirectory(): Promise<void> {
-    if (!fs.existsSync(this.options.outputDir)) {
-      fs.mkdirSync(this.options.outputDir, { recursive: true });
+    if (!fs.existsSync(this._options.outputDir)) {
+      fs.mkdirSync(this._options.outputDir, { recursive: true });
     }
   }
 
@@ -95,15 +95,15 @@ export class Proto2FetchGenerator {
     // Add filter and sort builders if enabled
     const allMessages = schema.files.flatMap(file => file.messages);
     
-    if (this.options.generateFilterBuilders) {
+    if (this._options.generateFilterBuilders) {
       typeContent += this.typeGenerator.generateFilterBuilders(allMessages);
     }
     
-    if (this.options.generateSortBuilders) {
+    if (this._options.generateSortBuilders) {
       typeContent += this.typeGenerator.generateSortBuilders(allMessages);
     }
 
-    const typesPath = path.join(this.options.outputDir, 'types.ts');
+    const typesPath = path.join(this._options.outputDir, 'types.ts');
     fs.writeFileSync(typesPath, typeContent, 'utf8');
   }
 
@@ -113,13 +113,13 @@ export class Proto2FetchGenerator {
     // Add helper methods
     clientContent += this.clientGenerator.generateHelperMethods(schema);
 
-    const clientPath = path.join(this.options.outputDir, 'client.ts');
+    const clientPath = path.join(this._options.outputDir, 'client.ts');
     fs.writeFileSync(clientPath, clientContent, 'utf8');
   }
 
   private async generatePackageJson(schema: ParsedSchema): Promise<void> {
     const packageJson = {
-      name: this.options.packageName || 'generated-api-client',
+      name: this._options.packageName || 'generated-api-client',
       version: '1.0.0',
       description: schema.description || 'Generated API client from protobuf definitions',
       main: './client.js',
@@ -136,7 +136,7 @@ export class Proto2FetchGenerator {
       }
     };
 
-    const packagePath = path.join(this.options.outputDir, 'package.json');
+    const packagePath = path.join(this._options.outputDir, 'package.json');
     fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2), 'utf8');
   }
 
@@ -144,24 +144,24 @@ export class Proto2FetchGenerator {
     const allServices = schema.files.flatMap(file => file.services);
     const allMethods = allServices.flatMap(service => service.methods);
     
-    const readme = `# ${this.options.packageName || 'Generated API Client'}
+    const readme = `# ${this._options.packageName || 'Generated API Client'}
 
 ${schema.description || 'Auto-generated TypeScript API client from protobuf definitions.'}
 
 ## Installation
 
 \`\`\`bash
-npm install ${this.options.packageName || 'generated-api-client'}
+npm install ${this._options.packageName || 'generated-api-client'}
 \`\`\`
 
 ## Usage
 
 \`\`\`typescript
-import { ${this.options.clientName || 'APIClient'} } from '${this.options.packageName || 'generated-api-client'}';
+import { ${this._options.clientName || 'APIClient'} } from '${this._options.packageName || 'generated-api-client'}';
 
 // Create client instance
-const client = new ${this.options.clientName || 'APIClient'}({
-  baseUrl: '${this.options.baseUrl || 'https://api.example.com'}',
+const client = new ${this._options.clientName || 'APIClient'}({
+  baseUrl: '${this._options.baseUrl || 'https://api.example.com'}',
   auth: {
     token: 'your-auth-token'
   }
@@ -196,7 +196,7 @@ interface APIClientConfig {
 ## Error Handling
 
 \`\`\`typescript
-import { APIError } from '${this.options.packageName || 'generated-api-client'}';
+import { APIError } from '${this._options.packageName || 'generated-api-client'}';
 
 try {
   const result = await client.someMethod(request);
@@ -214,7 +214,7 @@ try {
 *This client was generated using [proto2fetch](https://github.com/yourusername/proto2fetch).*
 `;
 
-    const readmePath = path.join(this.options.outputDir, 'README.md');
+    const readmePath = path.join(this._options.outputDir, 'README.md');
     fs.writeFileSync(readmePath, readme, 'utf8');
   }
 

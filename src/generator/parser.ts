@@ -12,6 +12,7 @@ import type {
 } from '../types/index.js';
 
 export class ProtoParser {
+  // eslint-disable-next-line no-unused-vars
   constructor(private options: ProtoParseOptions = {}) {}
 
   async parseFromDirectory(protoPath: string): Promise<ParsedSchema> {
@@ -230,7 +231,7 @@ export class ProtoParser {
     const content = fs.readFileSync(filePath, 'utf8');
     const imports: string[] = [];
     
-    const importRegex = /import\s+["\']([^"\']+)["\']/g;
+    const importRegex = /import\s+["']([^"']+)["']/g;
     let match;
     
     while ((match = importRegex.exec(content)) !== null) {

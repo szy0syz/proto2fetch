@@ -3,6 +3,7 @@ import type { ErrorDetail } from '../types/index.js';
 export class APIError extends Error {
   override readonly name = 'APIError';
   
+   
   constructor(
     public readonly status: number,
     public readonly code: string,
@@ -218,6 +219,7 @@ export const ErrorUtils = {
  * Error retry utility
  */
 export class RetryHandler {
+   
   constructor(
     private maxRetries: number = 3,
     private retryDelay: number = 1000,
@@ -247,7 +249,7 @@ export class RetryHandler {
    */
   async retry<T>(
     fn: () => Promise<T>,
-    onRetry?: (error: APIError, attempt: number) => void
+    onRetry?: (_error: APIError, _attempt: number) => void
   ): Promise<T> {
     let lastError: APIError;
     
