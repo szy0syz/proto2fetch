@@ -67,8 +67,9 @@ import type * as Types from './types.js';
 
   private generateConstructor(): string {
     let output = `  constructor(config?: Partial<import('proto2fetch/runtime').APIClientConfig>) {\n`;
+    output += `    const defaultBaseUrl = ${this.options.baseUrl && this.options.baseUrl.trim() ? `'${this.options.baseUrl}'` : '`${typeof window !== \'undefined\' ? window.location.origin : \'http://localhost:3000\'}`'};\n`;
     output += `    this.client = createAPIClient({\n`;
-    output += `      baseUrl: '${this.options.baseUrl}',\n`;
+    output += `      baseUrl: defaultBaseUrl,\n`;
     output += `      ...config\n`;
     output += `    });\n`;
     output += `  }\n`;

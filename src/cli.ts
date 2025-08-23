@@ -28,7 +28,7 @@ Usage: proto2fetch [options]
 Options:
   --proto-path <path>           Path to protobuf files directory
   --output-dir <path>           Output directory for generated files
-  --base-url <url>              Base URL for API client (default: http://localhost:3000)
+  --base-url <url>              Base URL for API client (default: current hostname)
   --package-name <name>         Name for generated package
   --client-name <name>          Name for generated client class (default: APIClient)
   --include-comments            Include comments in generated code (default: true)
@@ -271,7 +271,7 @@ async function main(): Promise<void> {
   const options: GeneratorOptions = {
     protoPath: cliOptions.protoPath || config.protoPath || '',
     outputDir: cliOptions.outputDir || config.outputDir || './generated',
-    baseUrl: cliOptions.baseUrl || config.baseUrl || 'http://localhost:3000',
+    baseUrl: cliOptions.baseUrl || config.baseUrl || '',
     packageName: cliOptions.packageName || config.packageName,
     clientName: cliOptions.clientName || config.clientName || 'APIClient',
     includeComments: cliOptions.includeComments ?? config.includeComments ?? true,

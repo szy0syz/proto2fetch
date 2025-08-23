@@ -35,7 +35,7 @@ export class Proto2FetchGenerator {
     // Configure client generator options
     const clientOptions: ClientGeneratorOptions = {
       clientName: this._options.clientName || 'APIClient',
-      baseUrl: this._options.baseUrl || 'http://localhost:3000',
+      baseUrl: this._options.baseUrl && this._options.baseUrl.trim() ? this._options.baseUrl : '',
       generateComments: this._options.includeComments ?? true,
       generateFilterBuilders: this._options.generateFilterBuilders ?? true,
       generateSortBuilders: this._options.generateSortBuilders ?? true

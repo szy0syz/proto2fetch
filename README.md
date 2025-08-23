@@ -65,7 +65,7 @@ proto2fetch [options]
 Options:
   --proto-path <path>           Path to protobuf files directory
   --output-dir <path>           Output directory for generated files
-  --base-url <url>              Base URL for API client
+  --base-url <url>              Base URL for API client (default: current hostname)
   --package-name <name>         Name for generated package
   --client-name <name>          Name for generated client class
   --include-comments            Include comments in generated code
