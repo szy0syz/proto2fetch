@@ -174,6 +174,7 @@ export type SortBuilder<T> = {
   private sortMessagesByDependency(messages: ProtoMessage[]): ProtoMessage[] {
     const messageMap = new Map(messages.map(m => [m.name, m]));
     const visited = new Set<string>();
+    const visiting = new Set<string>(); // Track currently visiting nodes to detect cycles
     const result: ProtoMessage[] = [];
 
     const visit = (message: ProtoMessage): void => {
@@ -181,21 +182,33 @@ export type SortBuilder<T> = {
         return;
       }
 
+      // Detect circular dependency
+      if (visiting.has(message.name)) {
+        console.warn(`Circular dependency detected involving ${message.name}, skipping dependency ordering for this node`);
+        return;
+      }
+
+      visiting.add(message.name);
+
       // Visit dependencies first
       for (const field of message.fields) {
         const baseType = field.type.replace(/\[\]$/, ''); // Remove array suffix
+        // Only process types that exist in our message map (ignore primitives)
         const dependency = messageMap.get(baseType);
         if (dependency && !visited.has(dependency.name)) {
           visit(dependency);
         }
       }
 
+      visiting.delete(message.name);
       visited.add(message.name);
       result.push(message);
     };
 
     for (const message of messages) {
-      visit(message);
+      if (!visited.has(message.name)) {
+        visit(message);
+      }
     }
 
     return result;

@@ -49,6 +49,29 @@ export class ProtoParser {
         return path.resolve(path.dirname(origin), target);
       };
     }
+    
+    // Add default resolver to ignore missing standard library files
+    const originalResolve = root.resolvePath;
+    root.resolvePath = (origin: string, target: string): string => {
+      // Skip standard protobuf library files that are commonly missing
+      if (target.includes('google/protobuf/') || 
+          target.includes('google/api/') ||
+          target.startsWith('google/')) {
+        // Return empty string to skip these imports
+        return '';
+      }
+      
+      if (originalResolve) {
+        try {
+          const result = originalResolve(origin, target);
+          return result || '';
+        } catch {
+          return '';
+        }
+      }
+      
+      return path.resolve(path.dirname(origin), target);
+    };
 
     const loadOptions: any = {
       keepCase: this.options.keepCase ?? true
@@ -62,18 +85,48 @@ export class ProtoParser {
       loadOptions.preferTrailingComment = this.options.preferTrailingComment;
     }
 
-    await root.load(filePath, loadOptions);
-
-    const services = this.extractServices(root);
-    const messages = this.extractMessages(root);
-    const imports = this.extractImports(filePath);
-
-    return {
-      package: root.nestedArray[0]?.name || '',
-      services,
-      messages,
-      imports
+    // Always use permissive loading to avoid extension resolution issues
+    const permissiveRoot = new protobuf.Root();
+    
+    // Set up a very permissive resolver that skips all problematic imports
+    permissiveRoot.resolvePath = (origin: string, target: string): string => {
+      // Skip any google imports that might cause issues
+      if (target.includes('google/') || target.includes('protoc-gen-')) {
+        return '';
+      }
+      
+      // Try to find local files
+      const localPath = path.resolve(path.dirname(origin), target);
+      if (fs.existsSync(localPath)) {
+        return localPath;
+      }
+      
+      // Skip if not found locally
+      return '';
     };
+    
+    try {
+      await permissiveRoot.load(filePath, { ...loadOptions, keepCase: true });
+      
+      const services = this.extractServices(permissiveRoot);
+      const messages = this.extractMessages(permissiveRoot);
+      const imports = this.extractImports(filePath);
+      return {
+        package: permissiveRoot.nestedArray[0]?.name || '',
+        services,
+        messages,
+        imports
+      };
+    } catch (error) {
+      console.warn(`Failed to load ${filePath}:`, error instanceof Error ? error.message.split('\n')[0] : error);
+      // Return empty result instead of failing completely
+      return {
+        package: '',
+        services: [],
+        messages: [],
+        imports: []
+      };
+    }
   }
 
   private findProtoFiles(dir: string): string[] {
