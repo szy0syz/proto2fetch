@@ -2,6 +2,8 @@
 
 🚀 Generate TypeScript-friendly API clients from protobuf definitions with modern HTTP client support.
 
+> https://www.npmjs.com/package/proto2fetch
+
 [![npm version](https://badge.fury.io/js/proto2fetch.svg)](https://badge.fury.io/js/proto2fetch)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
