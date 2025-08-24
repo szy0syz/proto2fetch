@@ -151,7 +151,7 @@ describe('APIClientGenerator', () => {
 
       const result = generator.generateClient(schema);
 
-      expect(result).toContain('const path = `/api/v1/users/${request.id}`;');
+      expect(result).toContain('const path = `api/v1/users/${request.id}`;');
       expect(result).toContain('const { id, ...body } = request;');
       expect(result).toContain('return this.client.request<Types.UpdateUserResponse>(\'PUT\', path, body, options);');
     });
@@ -346,7 +346,7 @@ describe('APIClientGenerator', () => {
 
       const result = generator.generateClient(schema);
 
-      expect(result).toContain('const path = `/api/v1/users/${request.userId}/resources/${request.resourceId}`;');
+      expect(result).toContain('const path = `api/v1/users/${request.userId}/resources/${request.resourceId}`;');
       expect(result).toContain('const { userId, resourceId, ...body } = request;');
     });
 
