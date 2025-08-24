@@ -270,6 +270,12 @@ pnpm run test:coverage
 2. 或者提供标准库文件路径
 3. 或者忽略标准库依赖 (简化模式)
 
+**问题**: `google.api.http` 注解解析失败，导致 HTTP 选项提取失败
+**解决**: ✅ 已修复 - 在项目中添加必需的 `google/api/http.proto` 和 `google/api/annotations.proto` 文件
+
+**问题**: 服务定义解析失败，返回 0 个服务
+**解决**: ✅ 已修复 - 增强 `extractServices` 方法，支持递归遍历嵌套命名空间查找服务定义
+
 **问题**: 循环依赖导致堆栈溢出
 **解决**: 在类型排序算法中添加循环检测
 
@@ -329,6 +335,8 @@ pnpm run release
 ## 📋 扩展建议
 
 ### 短期改进
+- [x] 修复 protobuf 服务定义解析问题 (✅ 已完成)
+- [x] 添加 google.api.http 注解支持 (✅ 已完成)
 - [ ] 完善错误处理和用户提示
 - [ ] 添加更多的 protobuf 标准库支持
 - [ ] 改进 CLI 工具的用户体验

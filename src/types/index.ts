@@ -141,6 +141,7 @@ export interface ProtoParseOptions {
   keepCase?: boolean;
   alternateCommentMode?: boolean;
   preferTrailingComment?: boolean;
+  debug?: boolean;
 }
 
 export interface TypeMappingOptions {

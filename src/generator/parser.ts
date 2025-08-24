@@ -50,14 +50,16 @@ export class ProtoParser {
       };
     }
     
-    // Add default resolver to ignore missing standard library files
+    // Add resolver to handle both local and builtin google files
     const originalResolve = root.resolvePath;
     root.resolvePath = (origin: string, target: string): string => {
-      // Skip standard protobuf library files that are commonly missing
-      if (target.includes('google/protobuf/') || 
-          target.includes('google/api/') ||
-          target.startsWith('google/')) {
-        // Return empty string to skip these imports
+      // Skip all google imports to avoid extension resolution issues
+      if (target.includes('google/')) {
+        return '';
+      }
+      
+      // Skip protoc-gen imports
+      if (target.includes('protoc-gen-')) {
         return '';
       }
       
@@ -88,10 +90,15 @@ export class ProtoParser {
     // Always use permissive loading to avoid extension resolution issues
     const permissiveRoot = new protobuf.Root();
     
-    // Set up a very permissive resolver that skips all problematic imports
+    // Set up a permissive resolver that handles google/api imports
     permissiveRoot.resolvePath = (origin: string, target: string): string => {
-      // Skip any google imports that might cause issues
-      if (target.includes('google/') || target.includes('protoc-gen-')) {
+      // Skip all google imports to avoid extension resolution issues
+      if (target.includes('google/')) {
+        return '';
+      }
+      
+      // Skip protoc-gen imports
+      if (target.includes('protoc-gen-')) {
         return '';
       }
       
@@ -153,17 +160,40 @@ export class ProtoParser {
   private extractServices(root: protobuf.Root): ProtoService[] {
     const services: ProtoService[] = [];
 
-    root.nestedArray.forEach(namespace => {
-      if (namespace instanceof protobuf.Service) {
-        const service: ProtoService = {
-          name: namespace.name,
-          methods: this.extractMethods(namespace),
-          description: this.extractComment(namespace)
-        };
-        services.push(service);
-      }
-    });
+    // Debug logging for service discovery (can be disabled in production)
+    if (this.options.debug) {
+      console.log('🔍 Root nested array:', root.nestedArray.map(n => ({
+        name: n.name,
+        type: n.constructor.name,
+        nested: (n as any).nestedArray?.length || 0
+      })));
+    }
 
+    // Recursively traverse all namespaces to find services
+    const traverseNamespace = (namespace: protobuf.Namespace, path: string = ''): void => {
+      namespace.nestedArray.forEach(nested => {
+        const currentPath = path ? `${path}.${nested.name}` : nested.name;
+        if (this.options.debug) {
+          console.log(`📁 Checking: ${currentPath} (${nested.constructor.name})`);
+        }
+        
+        if (nested instanceof protobuf.Service) {
+          if (this.options.debug) {
+            console.log(`✅ Found service: ${currentPath}`);
+          }
+          const service: ProtoService = {
+            name: nested.name,
+            methods: this.extractMethods(nested),
+            description: this.extractComment(nested)
+          };
+          services.push(service);
+        } else if (nested instanceof protobuf.Namespace) {
+          traverseNamespace(nested, currentPath);
+        }
+      });
+    };
+
+    traverseNamespace(root);
     return services;
   }
 
@@ -192,14 +222,41 @@ export class ProtoParser {
   }
 
   private extractHttpOptions(method: protobuf.Method): { method: ProtoMethod['httpMethod']; path: string } {
-    const httpOption = method.options?.['(google.api.http)'];
+    if (this.options.debug) {
+      console.log(`🌐 Extracting HTTP options for method: ${method.name}`);
+      console.log('Method options:', JSON.stringify(method.options, null, 2));
+    }
+    
+    // Try the nested structure first
+    let httpOption = method.options?.['(google.api.http)'];
+    
+    // If not found, try the flattened structure
+    if (!httpOption && method.options) {
+      const flatOptions: any = {};
+      for (const [key, value] of Object.entries(method.options)) {
+        if (key.startsWith('(google.api.http).')) {
+          const httpKey = key.replace('(google.api.http).', '');
+          flatOptions[httpKey] = value;
+        }
+      }
+      if (Object.keys(flatOptions).length > 0) {
+        httpOption = flatOptions;
+      }
+    }
     
     if (httpOption) {
+      if (this.options.debug) {
+        console.log('✅ Found HTTP option:', JSON.stringify(httpOption, null, 2));
+      }
       if (httpOption.get) return { method: 'GET', path: httpOption.get };
       if (httpOption.post) return { method: 'POST', path: httpOption.post };
       if (httpOption.put) return { method: 'PUT', path: httpOption.put };
       if (httpOption.delete) return { method: 'DELETE', path: httpOption.delete };
       if (httpOption.patch) return { method: 'PATCH', path: httpOption.patch };
+    } else {
+      if (this.options.debug) {
+        console.log('❌ No HTTP option found, using default');
+      }
     }
 
     // Default to POST if no HTTP option found
