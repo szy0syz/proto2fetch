@@ -141,6 +141,12 @@ import * as Types from './types.js';
     
     // Prepare path with parameter substitution
     let path = method.httpPath;
+    
+    // Remove leading slash to make it compatible with ky's prefixUrl
+    if (path.startsWith('/')) {
+      path = path.slice(1);
+    }
+    
     if (pathParams.length > 0) {
       for (const param of pathParams) {
         const camelParam = this.toCamelCase(param);

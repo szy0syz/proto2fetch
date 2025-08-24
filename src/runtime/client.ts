@@ -46,6 +46,11 @@ export class KyAPIClient implements APIClient {
         }
       }
 
+      // Remove leading slash if prefixUrl is configured to avoid ky error
+      if (this.config.baseUrl && finalPath.startsWith('/')) {
+        finalPath = finalPath.slice(1);
+      }
+
       // Prepare request options
       const requestOptions: KyOptions = {
         method: method.toLowerCase() as any,
