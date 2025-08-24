@@ -16,13 +16,19 @@ export class TypeScriptTypeGenerator {
     const allMessages = schema.files.flatMap(file => file.messages);
     const sortedMessages = this.sortMessagesByDependency(allMessages);
     
+    // Track generated interface names to avoid duplicates
+    const generatedInterfaces = new Set<string>();
+    
     for (const message of sortedMessages) {
-      output += this.generateMessageInterface(message);
-      output += '\n';
+      if (!generatedInterfaces.has(message.name)) {
+        output += this.generateMessageInterface(message);
+        output += '\n';
+        generatedInterfaces.add(message.name);
+      }
     }
 
-    // Generate common utility types
-    output += this.generateUtilityTypes();
+    // Always generate utility types (helper types and those not from proto)
+    output += this.generateUtilityTypes(generatedInterfaces);
 
     return output;
   }
@@ -104,31 +110,49 @@ export class TypeScriptTypeGenerator {
     return repeated ? `${tsType}[]` : tsType;
   }
 
-  private generateUtilityTypes(): string {
-    return `
-// Utility types
-export interface Pagination {
+  private generateUtilityTypes(generatedInterfaces: Set<string>): string {
+    let output = '\n// Utility types\n';
+    
+    // Only generate utility types that haven't been generated from proto files
+    if (!generatedInterfaces.has('Pagination')) {
+      output += `export interface Pagination {
   page: number;
   size: number;
 }
 
-export interface ErrorDetail {
+`;
+    }
+
+    if (!generatedInterfaces.has('ErrorDetail')) {
+      output += `export interface ErrorDetail {
   field: string;
   message: string;
 }
 
-export interface ErrorResponse {
+`;
+    }
+
+    if (!generatedInterfaces.has('ErrorResponse')) {
+      output += `export interface ErrorResponse {
   code: number;
   message: string;
   details?: ErrorDetail[];
 }
 
-export interface SuccessResponse {
+`;
+    }
+
+    if (!generatedInterfaces.has('SuccessResponse')) {
+      output += `export interface SuccessResponse {
   message: string;
   timestamp: ${this.options.dateAsString ? 'string' : 'Date'};
 }
 
-// Request helper types
+`;
+    }
+
+    // Always generate helper types (these are not from proto files)
+    output += `// Request helper types
 export interface PaginatedRequest<TFilter = any, TSort = any> {
   pagination?: Pagination;
   filter?: TFilter;
@@ -169,6 +193,8 @@ export type SortBuilder<T> = {
   [K in keyof T]?: 'asc' | 'desc';
 };
 `;
+
+    return output;
   }
 
   private sortMessagesByDependency(messages: ProtoMessage[]): ProtoMessage[] {
@@ -220,11 +246,13 @@ export type SortBuilder<T> = {
 
   generateFilterBuilders(messages: ProtoMessage[]): string {
     let output = '\n// Filter Builders\n';
+    const generatedBuilders = new Set<string>();
 
     for (const message of messages) {
-      if (message.name.includes('Filter')) {
+      if (message.name.includes('Filter') && !generatedBuilders.has(message.name)) {
         output += this.generateFilterBuilder(message);
         output += '\n';
+        generatedBuilders.add(message.name);
       }
     }
 
@@ -233,11 +261,13 @@ export type SortBuilder<T> = {
 
   generateSortBuilders(messages: ProtoMessage[]): string {
     let output = '\n// Sort Builders\n';
+    const generatedBuilders = new Set<string>();
 
     for (const message of messages) {
-      if (message.name.includes('Sort')) {
+      if (message.name.includes('Sort') && !generatedBuilders.has(message.name)) {
         output += this.generateSortBuilder(message);
         output += '\n';
+        generatedBuilders.add(message.name);
       }
     }
 
@@ -251,35 +281,54 @@ export type SortBuilder<T> = {
     let output = `export class ${builderName} {\n`;
     output += `  private filter: Partial<${objectName}> = {};\n\n`;
 
+    const generatedMethods = new Set<string>();
+
     for (const field of message.fields) {
       const fieldName = this.toCamelCase(field.name);
       const fieldType = this.mapProtobufTypeToTypeScript(field.type, false);
       
-      output += `  ${fieldName}(value: ${fieldType}): this {\n`;
-      output += `    this.filter.${fieldName} = value;\n`;
-      output += `    return this;\n`;
-      output += `  }\n\n`;
+      // Generate main field method
+      if (!generatedMethods.has(fieldName)) {
+        output += `  ${fieldName}(value: ${fieldType}): this {\n`;
+        output += `    this.filter.${fieldName} = value;\n`;
+        output += `    return this;\n`;
+        output += `  }\n\n`;
+        generatedMethods.add(fieldName);
+      }
 
       // Add special methods for string fields
       if (field.type === 'string') {
-        output += `  ${fieldName}Like(value: string): this {\n`;
-        output += `    this.filter.${fieldName}_like = value;\n`;
-        output += `    return this;\n`;
-        output += `  }\n\n`;
+        const likeMethodName = `${fieldName}Like`;
+        if (!generatedMethods.has(likeMethodName)) {
+          output += `  ${likeMethodName}(value: string): this {\n`;
+          output += `    this.filter.${fieldName}Like = value;\n`;
+          output += `    return this;\n`;
+          output += `  }\n\n`;
+          generatedMethods.add(likeMethodName);
+        }
       }
 
       // Add special methods for date fields
       if (field.type === 'Timestamp') {
         const dateType = this.options.dateAsString ? 'string' : 'Date';
-        output += `  ${fieldName}After(value: ${dateType}): this {\n`;
-        output += `    this.filter.${fieldName}_after = value;\n`;
-        output += `    return this;\n`;
-        output += `  }\n\n`;
         
-        output += `  ${fieldName}Before(value: ${dateType}): this {\n`;
-        output += `    this.filter.${fieldName}_before = value;\n`;
-        output += `    return this;\n`;
-        output += `  }\n\n`;
+        const afterMethodName = `${fieldName}After`;
+        if (!generatedMethods.has(afterMethodName)) {
+          output += `  ${afterMethodName}(value: ${dateType}): this {\n`;
+          output += `    this.filter.${fieldName}After = value;\n`;
+          output += `    return this;\n`;
+          output += `  }\n\n`;
+          generatedMethods.add(afterMethodName);
+        }
+        
+        const beforeMethodName = `${fieldName}Before`;
+        if (!generatedMethods.has(beforeMethodName)) {
+          output += `  ${beforeMethodName}(value: ${dateType}): this {\n`;
+          output += `    this.filter.${fieldName}Before = value;\n`;
+          output += `    return this;\n`;
+          output += `  }\n\n`;
+          generatedMethods.add(beforeMethodName);
+        }
       }
     }
 
