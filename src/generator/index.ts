@@ -211,7 +211,7 @@ try {
 
 ---
 
-*This client was generated using [proto2fetch](https://github.com/yourusername/proto2fetch).*
+*This client was generated using [proto2fetch](https://github.com/szy0syz/proto2fetch).*
 `;
 
     const readmePath = path.join(this._options.outputDir, 'README.md');
