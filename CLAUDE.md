@@ -22,7 +22,7 @@ proto2fetch/
 │   │   └── index.ts        # 生成器总入口
 │   ├── runtime/            # 运行时库 (与生成的代码一起使用)
 │   │   ├── client.ts       # HTTP 客户端封装 (基于 ky)
-│   │   ├── auth.ts         # 认证管理 (Bearer Token, JWT)
+│   │   ├── auth.ts         # 插件化认证架构 (SimpleAuth, JWTAuth, CustomAuth)
 │   │   ├── error.ts        # 错误处理和分类
 │   │   └── index.ts        # 运行时导出
 │   ├── types/              # 通用类型定义
@@ -163,16 +163,17 @@ optional → T | undefined
 - 请求/响应钩子支持
 
 #### 认证管理 (`auth.ts`)
-**功能**: 处理 API 认证
-- Bearer Token 管理
-- JWT 解析和验证
-- 自动 token 刷新
-- 支持自定义刷新逻辑
+**功能**: 插件化认证架构，支持多种认证方式
+- 简洁的 `AuthProvider` 接口设计
+- 三种内置认证实现：`SimpleAuth`, `JWTAuth`, `CustomAuth`
+- 完全显式的认证管理（无隐式存储读取）
+- 运行时可选择任意认证方式
 
 **支持的认证方式**:
-- Bearer Token
-- Basic Auth
-- JWT 自动刷新
+- **SimpleAuth**: Bearer Token, API Key, Paseto 等简单认证
+- **JWTAuth**: JWT 认证，含过期检查和自动刷新
+- **CustomAuth**: 完全自定义认证逻辑
+- 向后兼容：支持旧的 `{ token: 'xxx' }` 配置
 
 #### 错误处理 (`error.ts`)
 **功能**: 统一的错误处理和分类
@@ -389,13 +390,54 @@ docs(readme): update installation instructions
 - 授权系统 (角色和权限管理)
 - 分页和过滤功能
 
-### 生成的客户端示例
+### 认证使用示例
+
+#### 1. JWT 认证（含自动刷新）
 ```typescript
 import { CleanGoAPIClient } from './generated/client';
+import { JWTAuth } from 'proto2fetch/runtime';
 
 const client = new CleanGoAPIClient({
   baseUrl: 'https://api.example.com',
-  auth: { token: 'your-auth-token' }
+  auth: new JWTAuth('your-jwt-token', {
+    onExpired: async () => {
+      const response = await fetch('/auth/refresh', { method: 'POST' });
+      const { token } = await response.json();
+      return token;
+    }
+  })
+});
+```
+
+#### 2. Paseto 认证
+```typescript
+import { SimpleAuth } from 'proto2fetch/runtime';
+
+const client = new CleanGoAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth('your-paseto-token', 'Bearer')
+});
+```
+
+#### 3. 自定义认证
+```typescript
+import { CustomAuth } from 'proto2fetch/runtime';
+
+const client = new CleanGoAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new CustomAuth(async () => ({
+    'X-API-Key': await getApiKey(),
+    'X-Timestamp': Date.now().toString(),
+    'X-Signature': await generateSignature()
+  }))
+});
+```
+
+#### 4. 向后兼容（简单用法）
+```typescript
+const client = new CleanGoAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: { token: 'your-auth-token' }  // 自动转为 SimpleAuth
 });
 
 // 类型安全的 API 调用

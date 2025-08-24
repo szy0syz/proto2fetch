@@ -15,7 +15,7 @@
 - 💪 **Full type safety** with TypeScript support
 - 🛠️ **Request/Response interceptors** and error handling
 - 📦 **NPM ready** - publish to public or private registries
-- ✨ **Advanced features** - authentication, pagination, filtering, sorting
+- ✨ **Flexible authentication** - JWT, Paseto, custom auth with plugin architecture
 - 🎯 **Framework agnostic** - works with any TypeScript/JavaScript project
 - 🔧 **Highly configurable** - customize everything to your needs
 
@@ -42,12 +42,11 @@ npx proto2fetch --proto-path ./proto --output-dir ./src/generated --base-url htt
 
 ```typescript
 import { CleanGoAPIClient } from './generated/client';
+import { SimpleAuth } from 'proto2fetch/runtime';
 
 const client = new CleanGoAPIClient({
   baseUrl: 'https://api.example.com',
-  auth: {
-    token: 'your-auth-token'
-  }
+  auth: new SimpleAuth('your-auth-token')
 });
 
 // Type-safe API calls
@@ -131,18 +130,54 @@ const users = await client.getUsers({ pagination: { page: 1, size: 10 } });
 
 ### Authentication
 
+proto2fetch supports multiple authentication methods through a flexible plugin architecture:
+
+#### JWT Authentication with Auto-Refresh
 ```typescript
-// Configure authentication
+import { JWTAuth } from 'proto2fetch/runtime';
+
 const client = new MyAPIClient({
   baseUrl: 'https://api.example.com',
-  auth: {
-    token: 'your-token',
-    tokenType: 'Bearer', // or 'Basic'
-    refreshTokenHandler: async () => {
-      // Custom refresh logic
-      return await refreshToken();
+  auth: new JWTAuth('your-jwt-token', {
+    onExpired: async () => {
+      const response = await fetch('/auth/refresh', { method: 'POST' });
+      const { token } = await response.json();
+      return token;
     }
-  }
+  })
+});
+```
+
+#### Paseto Authentication
+```typescript
+import { SimpleAuth } from 'proto2fetch/runtime';
+
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth('your-paseto-token', 'Bearer')
+});
+```
+
+#### Custom Authentication
+```typescript
+import { CustomAuth } from 'proto2fetch/runtime';
+
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new CustomAuth(async () => ({
+    'X-API-Key': await getApiKey(),
+    'X-Timestamp': Date.now().toString(),
+    'X-Signature': await generateSignature()
+  }))
+});
+```
+
+#### Simple Token (Legacy Support)
+```typescript
+// Backward compatible - automatically converts to SimpleAuth
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: { token: 'your-token', tokenType: 'Bearer' }
 });
 
 // Login and update token
@@ -293,11 +328,13 @@ interface APIClientConfig {
     beforeError?: ErrorHook[];
     afterResponse?: ResponseHook[];
   };
-  auth?: {
-    token?: string;
-    tokenType?: 'Bearer' | 'Basic';
-    refreshTokenHandler?: () => Promise<string>;
-  };
+  auth?: 
+    | AuthProvider                    // New plugin-based auth
+    | {                               // Legacy support
+        token?: string;
+        tokenType?: 'Bearer' | 'Basic';
+        refreshTokenHandler?: () => Promise<string>;
+      };
   debug?: boolean;
 }
 ```

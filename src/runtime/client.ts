@@ -6,7 +6,7 @@ import type {
   APIErrorResponse 
 } from '../types/index.js';
 import { APIError } from './error.js';
-import { AuthManager } from './auth.js';
+import { AuthProvider, SimpleAuth } from './auth.js';
 
 export interface APIClient {
   request<T = any>(
@@ -22,11 +22,27 @@ export interface APIClient {
 
 export class KyAPIClient implements APIClient {
   private ky: typeof ky;
-  private authManager: AuthManager;
+  private authProvider?: AuthProvider;
 
   constructor(private config: APIClientConfig) {
-    this.authManager = new AuthManager(config.auth);
+    this.authProvider = this.createAuthProvider(config.auth);
     this.ky = this.createKyInstance();
+  }
+
+  private createAuthProvider(auth?: APIClientConfig['auth']): AuthProvider | undefined {
+    if (!auth) return undefined;
+    
+    // Support new AuthProvider interface
+    if ('getAuthHeaders' in auth) {
+      return auth as AuthProvider;
+    }
+    
+    // Legacy support: convert old config to SimpleAuth
+    if ('token' in auth && auth.token) {
+      return new SimpleAuth(auth.token, auth.tokenType || 'Bearer');
+    }
+    
+    return undefined;
   }
 
   async request<T = any>(
@@ -58,8 +74,8 @@ export class KyAPIClient implements APIClient {
       };
 
       // Add authentication headers
-      if (!skipAuth) {
-        const authHeaders = await this.authManager.getAuthHeaders();
+      if (!skipAuth && this.authProvider) {
+        const authHeaders = await this.authProvider.getAuthHeaders();
         requestOptions.headers = {
           ...authHeaders,
           ...requestOptions.headers
@@ -103,11 +119,11 @@ export class KyAPIClient implements APIClient {
   }
 
   setAuthToken(token: string): void {
-    this.authManager.setToken(token);
+    this.authProvider = new SimpleAuth(token, 'Bearer');
   }
 
   clearAuthToken(): void {
-    this.authManager.clearToken();
+    this.authProvider = undefined;
   }
 
   private createKyInstance(): typeof ky {

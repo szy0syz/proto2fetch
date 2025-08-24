@@ -9,10 +9,14 @@ export {
 } from './error.js';
 
 export { 
-  AuthManager, 
-  JWTAuthManager,
+  AuthProvider,
+  SimpleAuth,
+  JWTAuth,
+  CustomAuth,
   JWTUtils
 } from './auth.js';
+
+export type { AuthConfig } from './auth.js';
 
 export type {
   APIClientConfig,

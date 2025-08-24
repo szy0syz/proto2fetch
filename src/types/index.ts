@@ -63,11 +63,13 @@ export interface APIClientConfig {
     beforeError?: ErrorHook[];
     afterResponse?: ResponseHook[];
   };
-  auth?: {
-    token?: string;
-    tokenType?: 'Bearer' | 'Basic';
-    refreshTokenHandler?: () => Promise<string>;
-  };
+  auth?: 
+    | import('../runtime/auth.js').AuthProvider
+    | {
+        token?: string;
+        tokenType?: 'Bearer' | 'Basic';
+        refreshTokenHandler?: () => Promise<string>;
+      };
   cache?: CacheConfig;
   debug?: boolean;
 }
