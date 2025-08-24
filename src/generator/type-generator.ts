@@ -287,6 +287,11 @@ export type SortBuilder<T> = {
       const fieldName = this.toCamelCase(field.name);
       const fieldType = this.mapProtobufTypeToTypeScript(field.type, false);
       
+      // Check if this field already has a suffix (Like, After, Before)
+      const hasLikeSuffix = fieldName.endsWith('Like');
+      const hasAfterSuffix = fieldName.endsWith('After'); 
+      const hasBeforeSuffix = fieldName.endsWith('Before');
+      
       // Generate main field method
       if (!generatedMethods.has(fieldName)) {
         output += `  ${fieldName}(value: ${fieldType}): this {\n`;
@@ -296,38 +301,41 @@ export type SortBuilder<T> = {
         generatedMethods.add(fieldName);
       }
 
-      // Add special methods for string fields
-      if (field.type === 'string') {
-        const likeMethodName = `${fieldName}Like`;
-        if (!generatedMethods.has(likeMethodName)) {
-          output += `  ${likeMethodName}(value: string): this {\n`;
-          output += `    this.filter.${fieldName}Like = value;\n`;
-          output += `    return this;\n`;
-          output += `  }\n\n`;
-          generatedMethods.add(likeMethodName);
+      // Only add special methods for base fields (not those already with suffixes)
+      if (!hasLikeSuffix && !hasAfterSuffix && !hasBeforeSuffix) {
+        // Add special methods for string fields
+        if (field.type === 'string') {
+          const likeMethodName = `${fieldName}Like`;
+          if (!generatedMethods.has(likeMethodName)) {
+            output += `  ${likeMethodName}(value: string): this {\n`;
+            output += `    this.filter.${fieldName}Like = value;\n`;
+            output += `    return this;\n`;
+            output += `  }\n\n`;
+            generatedMethods.add(likeMethodName);
+          }
         }
-      }
 
-      // Add special methods for date fields
-      if (field.type === 'Timestamp') {
-        const dateType = this.options.dateAsString ? 'string' : 'Date';
-        
-        const afterMethodName = `${fieldName}After`;
-        if (!generatedMethods.has(afterMethodName)) {
-          output += `  ${afterMethodName}(value: ${dateType}): this {\n`;
-          output += `    this.filter.${fieldName}After = value;\n`;
-          output += `    return this;\n`;
-          output += `  }\n\n`;
-          generatedMethods.add(afterMethodName);
-        }
-        
-        const beforeMethodName = `${fieldName}Before`;
-        if (!generatedMethods.has(beforeMethodName)) {
-          output += `  ${beforeMethodName}(value: ${dateType}): this {\n`;
-          output += `    this.filter.${fieldName}Before = value;\n`;
-          output += `    return this;\n`;
-          output += `  }\n\n`;
-          generatedMethods.add(beforeMethodName);
+        // Add special methods for date fields
+        if (field.type === 'Timestamp') {
+          const dateType = this.options.dateAsString ? 'string' : 'Date';
+          
+          const afterMethodName = `${fieldName}After`;
+          if (!generatedMethods.has(afterMethodName)) {
+            output += `  ${afterMethodName}(value: ${dateType}): this {\n`;
+            output += `    this.filter.${fieldName}After = value;\n`;
+            output += `    return this;\n`;
+            output += `  }\n\n`;
+            generatedMethods.add(afterMethodName);
+          }
+          
+          const beforeMethodName = `${fieldName}Before`;
+          if (!generatedMethods.has(beforeMethodName)) {
+            output += `  ${beforeMethodName}(value: ${dateType}): this {\n`;
+            output += `    this.filter.${fieldName}Before = value;\n`;
+            output += `    return this;\n`;
+            output += `  }\n\n`;
+            generatedMethods.add(beforeMethodName);
+          }
         }
       }
     }
