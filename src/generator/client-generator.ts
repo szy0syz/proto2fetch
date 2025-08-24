@@ -33,7 +33,7 @@ export class APIClientGenerator {
   private generateImports(): string {
     return `import type { APIClient, RequestOptions } from 'proto2fetch/runtime';
 import { createAPIClient } from 'proto2fetch/runtime';
-import type * as Types from './types.js';
+import * as Types from './types.js';
 
 `;
   }

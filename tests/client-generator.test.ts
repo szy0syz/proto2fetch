@@ -44,7 +44,7 @@ describe('APIClientGenerator', () => {
       // Check header and imports
       expect(result).toContain('// This file is auto-generated. Do not edit manually.');
       expect(result).toContain('import type { APIClient, RequestOptions } from \'proto2fetch/runtime\';');
-      expect(result).toContain('import type * as Types from \'./types.js\';');
+      expect(result).toContain('import * as Types from \'./types.js\';');
 
       // Check class definition
       expect(result).toContain('export class TestAPIClient {');
