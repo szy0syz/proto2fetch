@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TypeScriptTypeGenerator } from '../src/generator/type-generator.js';
 import type { ParsedSchema, ProtoMessage, ProtoField } from '../src/types/index.js';
 

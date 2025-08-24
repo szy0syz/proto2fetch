@@ -156,21 +156,21 @@ import type * as Types from './types.js';
       if (method.inputType !== 'Empty') {
         // For GET requests, convert request object to query parameters
         output += `    const searchParams = this.client.objectToSearchParams(request);\n`;
-        output += `    return this.client.request<${method.outputType}>('${method.httpMethod}', path, undefined, {\n`;
+        output += `    return this.client.request<Types.${method.outputType}>('${method.httpMethod}', path, undefined, {\n`;
         output += `      searchParams,\n`;
         output += `      ...options\n`;
         output += `    });\n`;
       } else {
-        output += `    return this.client.request<${method.outputType}>('${method.httpMethod}', path, undefined, options);\n`;
+        output += `    return this.client.request<Types.${method.outputType}>('${method.httpMethod}', path, undefined, options);\n`;
       }
     } else {
       // For POST/PUT/DELETE requests, send request as body
       if (pathParams.length > 0) {
         // Remove path parameters from request body
         output += `    const { ${pathParams.map(p => this.toCamelCase(p)).join(', ')}, ...body } = request;\n`;
-        output += `    return this.client.request<${method.outputType}>('${method.httpMethod}', path, body, options);\n`;
+        output += `    return this.client.request<Types.${method.outputType}>('${method.httpMethod}', path, body, options);\n`;
       } else {
-        output += `    return this.client.request<${method.outputType}>('${method.httpMethod}', path, request, options);\n`;
+        output += `    return this.client.request<Types.${method.outputType}>('${method.httpMethod}', path, request, options);\n`;
       }
     }
 
@@ -251,8 +251,11 @@ export function createPaginatedRequest<TFilter = any, TSort = any>(
     let output = '\n// Filter helpers\n';
     
     const filterMessages = messages.filter(m => m.name.includes('Filter'));
+    const uniqueFilterMessages = filterMessages.filter((message, index, self) => 
+      index === self.findIndex(m => m.name === message.name)
+    );
     
-    for (const message of filterMessages) {
+    for (const message of uniqueFilterMessages) {
       const entityName = message.name.replace('Filter', '');
       output += `\nexport function create${entityName}Filter(): Types.${message.name}Builder {\n`;
       output += `  return new Types.${message.name}Builder();\n`;
@@ -266,8 +269,11 @@ export function createPaginatedRequest<TFilter = any, TSort = any>(
     let output = '\n// Sort helpers\n';
     
     const sortMessages = messages.filter(m => m.name.includes('Sort'));
+    const uniqueSortMessages = sortMessages.filter((message, index, self) => 
+      index === self.findIndex(m => m.name === message.name)
+    );
     
-    for (const message of sortMessages) {
+    for (const message of uniqueSortMessages) {
       const entityName = message.name.replace('Sort', '');
       output += `\nexport function create${entityName}Sort(): Types.${message.name}Builder {\n`;
       output += `  return new Types.${message.name}Builder();\n`;
