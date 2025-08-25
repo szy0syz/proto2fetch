@@ -1,2 +1,6 @@
 dist
 node_modules
+
+# VitePress 构建产物
+docs/.vitepress/dist
+docs/.vitepress/cache
