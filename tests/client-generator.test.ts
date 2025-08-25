@@ -43,7 +43,7 @@ describe('APIClientGenerator', () => {
 
       // Check header and imports
       expect(result).toContain('// This file is auto-generated. Do not edit manually.');
-      expect(result).toContain('import type { APIClient, RequestOptions } from \'proto2fetch/runtime\';');
+      expect(result).toContain('import type { APIClient, RequestOptions, AuthProvider } from \'proto2fetch/runtime\';');
       expect(result).toContain('import * as Types from \'./types.js\';');
 
       // Check class definition
@@ -53,6 +53,14 @@ describe('APIClientGenerator', () => {
       // Check constructor
       expect(result).toContain('constructor(config?: Partial<import(\'proto2fetch/runtime\').APIClientConfig>) {');
       expect(result).toContain('const defaultBaseUrl = \'https://api.test.com\';');
+
+      // Check authentication management methods
+      expect(result).toContain('updateAuthToken(token: string): void {');
+      expect(result).toContain('this.client.updateAuthToken(token);');
+      expect(result).toContain('updateAuthProvider(provider: AuthProvider): void {');
+      expect(result).toContain('this.client.updateAuthProvider(provider);');
+      expect(result).toContain('clearAuthToken(): void {');
+      expect(result).toContain('this.client.clearAuthToken();');
 
       // Check method generation
       expect(result).toContain('async createUser(request: Types.CreateUserRequest, options?: RequestOptions): Promise<Types.CreateUserResponse> {');

@@ -31,7 +31,7 @@ export class APIClientGenerator {
   }
 
   private generateImports(): string {
-    return `import type { APIClient, RequestOptions } from 'proto2fetch/runtime';
+    return `import type { APIClient, RequestOptions, AuthProvider } from 'proto2fetch/runtime';
 import { createAPIClient } from 'proto2fetch/runtime';
 import * as Types from './types.js';
 
@@ -50,6 +50,10 @@ import * as Types from './types.js';
     
     // Constructor
     output += this.generateConstructor();
+    output += '\n';
+
+    // Authentication management methods
+    output += this.generateAuthMethods();
     output += '\n';
 
     // Generate method for each service
@@ -72,6 +76,33 @@ import * as Types from './types.js';
     output += `      baseUrl: defaultBaseUrl,\n`;
     output += `      ...config\n`;
     output += `    });\n`;
+    output += `  }\n`;
+    
+    return output;
+  }
+
+  private generateAuthMethods(): string {
+    let output = '';
+    
+    if (this.options.generateComments) {
+      output += `  /**\n   * Update authentication token for existing auth provider\n   * @param token - The new authentication token\n   */\n`;
+    }
+    output += `  updateAuthToken(token: string): void {\n`;
+    output += `    this.client.updateAuthToken(token);\n`;
+    output += `  }\n\n`;
+
+    if (this.options.generateComments) {
+      output += `  /**\n   * Update authentication provider\n   * @param provider - The new authentication provider\n   */\n`;
+    }
+    output += `  updateAuthProvider(provider: AuthProvider): void {\n`;
+    output += `    this.client.updateAuthProvider(provider);\n`;
+    output += `  }\n\n`;
+
+    if (this.options.generateComments) {
+      output += `  /**\n   * Clear authentication information\n   */\n`;
+    }
+    output += `  clearAuthToken(): void {\n`;
+    output += `    this.client.clearAuthToken();\n`;
     output += `  }\n`;
     
     return output;
