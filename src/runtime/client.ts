@@ -16,7 +16,8 @@ export interface APIClient {
     _options?: RequestOptions
   ): Promise<T>;
   objectToSearchParams(_obj: Record<string, any>): URLSearchParams;
-  setAuthToken(_token: string): void;
+  updateAuthToken(_token: string): void;
+  updateAuthProvider(_provider: AuthProvider): void;
   clearAuthToken(): void;
 }
 
@@ -118,8 +119,19 @@ export class KyAPIClient implements APIClient {
     return params;
   }
 
-  setAuthToken(token: string): void {
-    this.authProvider = new SimpleAuth(token, 'Bearer');
+
+  updateAuthToken(token: string): void {
+    if (this.authProvider && 'updateToken' in this.authProvider) {
+      // Update existing auth provider if it supports token updates
+      (this.authProvider as any).updateToken(token);
+    } else {
+      // Fallback: create new SimpleAuth provider
+      this.authProvider = new SimpleAuth(token, 'Bearer');
+    }
+  }
+
+  updateAuthProvider(provider: AuthProvider): void {
+    this.authProvider = provider;
   }
 
   clearAuthToken(): void {

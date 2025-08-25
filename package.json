@@ -1,6 +1,6 @@
 {
   "name": "proto2fetch",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "type": "module",
   "description": "Generate TypeScript-friendly API client from protobuf definitions with ky HTTP client",
   "keywords": [
@@ -40,6 +40,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "dev": "rollup -c -w",
     "build": "rm -rf dist && rollup -c",
     "type-check": "tsc --noEmit",
@@ -51,7 +52,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "prepublishOnly": "npm run build && npm run test",
+    "prepublishOnly": "pnpm run build && pnpm run test",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "changeset publish"
@@ -84,8 +85,10 @@
     "typescript": ">=4.5.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=16.0.0",
+    "pnpm": ">=8.0.0"
   },
+  "packageManager": "pnpm@9.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/szy0syz/proto2fetch.git"

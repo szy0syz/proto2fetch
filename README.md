@@ -16,6 +16,7 @@
 - 🛠️ **Request/Response interceptors** and error handling
 - 📦 **NPM ready** - publish to public or private registries
 - ✨ **Flexible authentication** - JWT, Paseto, custom auth with plugin architecture
+- 🔄 **Dynamic token management** - Update authentication tokens at runtime
 - 🎯 **Framework agnostic** - works with any TypeScript/JavaScript project
 - 🔧 **Highly configurable** - customize everything to your needs
 
@@ -130,7 +131,7 @@ const users = await client.getUsers({ pagination: { page: 1, size: 10 } });
 
 ### Authentication
 
-proto2fetch supports multiple authentication methods through a flexible plugin architecture:
+proto2fetch supports multiple authentication methods through a flexible plugin architecture, with **dynamic token management** for real-world applications:
 
 #### JWT Authentication with Auto-Refresh
 ```typescript
@@ -172,6 +173,97 @@ const client = new MyAPIClient({
 });
 ```
 
+#### Dynamic Token Updates
+
+**Method 1: Direct Token Update**
+```typescript
+import { KyAPIClient, SimpleAuth } from 'proto2fetch/runtime';
+
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth('initial-token')
+}) as KyAPIClient;
+
+// User logs in, get new token
+async function handleUserLogin() {
+  const loginResponse = await client.request('POST', '/auth/login', {
+    username: 'user@example.com',
+    password: 'password'
+  }, { skipAuth: true });
+  
+  // Update existing auth provider
+  client.updateAuthToken(loginResponse.token);
+}
+```
+
+**Method 2: Real-time Dynamic Token**
+```typescript
+// Token stored in variable, supports real-time updates
+let currentToken = null;
+
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth(() => currentToken || 'fallback-token')
+});
+
+// Token updates automatically affect all requests
+function updateToken(newToken: string) {
+  currentToken = newToken;
+}
+```
+
+**Method 3: Async Token Provider**
+```typescript
+const client = new MyAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth(async () => {
+    // Fetch token from secure storage
+    const token = await getTokenFromSecureStorage();
+    return token || await refreshTokenFromServer();
+  })
+});
+```
+
+#### User Login/Logout Workflow
+```typescript
+class UserAuthManager {
+  private apiClient = new MyAPIClient({
+    baseUrl: 'https://api.example.com'
+    // No auth initially
+  }) as KyAPIClient;
+  
+  async login(username: string, password: string) {
+    // Login without authentication
+    const response = await this.apiClient.request('POST', '/auth/login', {
+      username, password
+    }, { skipAuth: true });
+    
+    const { token, refreshToken } = response;
+    
+    // Set up authentication for future requests
+    this.apiClient.updateAuthProvider(new JWTAuth(token, {
+      onExpired: async () => {
+        const refreshResponse = await fetch('/auth/refresh', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${refreshToken}` }
+        });
+        const { accessToken } = await refreshResponse.json();
+        return accessToken;
+      }
+    }));
+  }
+  
+  logout() {
+    this.apiClient.clearAuthToken();
+  }
+  
+  // Now all API calls are authenticated
+  async getUserProfile() {
+    return this.apiClient.request('GET', '/user/profile');
+  }
+}
+```
+
 #### Simple Token (Legacy Support)
 ```typescript
 // Backward compatible - automatically converts to SimpleAuth
@@ -180,13 +272,8 @@ const client = new MyAPIClient({
   auth: { token: 'your-token', tokenType: 'Bearer' }
 });
 
-// Login and update token
-const loginResponse = await client.login({
-  username: 'user@example.com',
-  password: 'password'
-});
-
-client.setAuthToken(loginResponse.token);
+// Traditional method still works
+client.updateAuthToken(newToken);
 ```
 
 ### Error Handling
@@ -338,6 +425,25 @@ interface APIClientConfig {
   debug?: boolean;
 }
 ```
+
+### Client Authentication Management API
+
+```typescript
+interface APIClient {
+  // Basic request method
+  request<T>(method: string, path: string, data?: any, options?: RequestOptions): Promise<T>;
+  
+  // Authentication management methods
+  updateAuthToken(token: string): void;        // Update existing provider token or create new SimpleAuth
+  updateAuthProvider(provider: AuthProvider): void; // Replace auth provider
+  clearAuthToken(): void;                      // Remove authentication
+}
+```
+
+**Method Descriptions:**
+- `updateAuthToken()`: Tries to update existing provider's token; falls back to creating new SimpleAuth instance
+- `updateAuthProvider()`: Completely replaces the authentication provider
+- `clearAuthToken()`: Removes all authentication
 
 ## 🧪 Testing
 

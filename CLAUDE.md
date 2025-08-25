@@ -67,6 +67,7 @@ proto2fetch/
 ## 🛠️ 开发工作流
 
 ### 基础命令
+
 ```bash
 # 安装依赖
 pnpm install
@@ -163,17 +164,29 @@ optional → T | undefined
 - 请求/响应钩子支持
 
 #### 认证管理 (`auth.ts`)
-**功能**: 插件化认证架构，支持多种认证方式
+**功能**: 插件化认证架构，支持多种认证方式和动态token管理
 - 简洁的 `AuthProvider` 接口设计
 - 三种内置认证实现：`SimpleAuth`, `JWTAuth`, `CustomAuth`
 - 完全显式的认证管理（无隐式存储读取）
 - 运行时可选择任意认证方式
+- **🆕 动态token更新**: 支持用户登录后动态更新认证信息
 
 **支持的认证方式**:
 - **SimpleAuth**: Bearer Token, API Key, Paseto 等简单认证
+  - 支持字符串token（可更新）或回调函数（实时动态）
+  - `updateToken(newToken)` 方法用于动态更新
 - **JWTAuth**: JWT 认证，含过期检查和自动刷新
+  - 支持字符串token（可更新）或回调函数（实时动态）
+  - `updateToken(newToken)` 方法用于动态更新
+  - 自动刷新后会更新内部token（仅限字符串模式）
 - **CustomAuth**: 完全自定义认证逻辑
+  - 始终通过回调函数提供headers，天然支持动态更新
 - 向后兼容：支持旧的 `{ token: 'xxx' }` 配置
+
+**Token提供方式**:
+1. **静态字符串**: `new SimpleAuth('token')` - 支持 `updateToken()` 方法
+2. **回调函数**: `new SimpleAuth(() => getCurrentToken())` - 实时动态获取
+3. **异步回调**: `new SimpleAuth(async () => await getTokenFromStorage())` - 支持异步获取
 
 #### 错误处理 (`error.ts`)
 **功能**: 统一的错误处理和分类
@@ -338,6 +351,8 @@ pnpm run release
 ### 短期改进
 - [x] 修复 protobuf 服务定义解析问题 (✅ 已完成)
 - [x] 添加 google.api.http 注解支持 (✅ 已完成)
+- [x] 实现动态认证管理 (✅ 已完成)
+- [x] 添加认证相关的单元测试 (✅ 已完成)
 - [ ] 完善错误处理和用户提示
 - [ ] 添加更多的 protobuf 标准库支持
 - [ ] 改进 CLI 工具的用户体验
@@ -350,6 +365,28 @@ pnpm run release
 - [ ] 支持其他目标语言 (Python, Go, etc.)
 
 ## 🤝 贡献指南
+
+### 开发环境要求
+- **Node.js**: >= 18.0.0
+- **包管理器**: pnpm
+- **TypeScript**: >= 5.0
+
+### 环境设置
+```bash
+# 1. 克隆仓库
+git clone <repository-url>
+cd proto2fetch
+
+# 2. 安装 pnpm (如果未安装)
+npm install -g pnpm
+
+# 3. 安装依赖
+pnpm install
+
+# 4. 验证环境
+pnpm run type-check
+pnpm test
+```
 
 ### 代码风格
 - 使用 TypeScript 严格模式
@@ -389,6 +426,7 @@ docs(readme): update installation instructions
 - 认证系统 (Login/Logout/Validate)
 - 授权系统 (角色和权限管理)
 - 分页和过滤功能
+- 动态认证管理
 
 ### 认证使用示例
 
@@ -409,7 +447,63 @@ const client = new CleanGoAPIClient({
 });
 ```
 
-#### 2. Paseto 认证
+#### 2. 动态Token更新（用户登录场景）
+```typescript
+import { KyAPIClient, SimpleAuth } from 'proto2fetch/runtime';
+
+// 初始化时无认证
+const client = new KyAPIClient({
+  baseUrl: 'https://api.example.com'
+});
+
+// 用户登录后获取token并设置认证
+async function userLogin(username: string, password: string) {
+  const response = await client.request('POST', '/auth/login', {
+    username, password
+  }, { skipAuth: true });
+  
+  const { token } = response;
+  
+  // 动态设置认证信息
+  client.updateAuthToken(token);
+  // 或者：client.updateAuthProvider(new SimpleAuth(token));
+}
+
+// 用户登出
+function userLogout() {
+  client.clearAuthToken();
+}
+```
+
+#### 3. 实时动态Token（回调函数模式）
+```typescript
+// Token存储在变量中，支持实时更新
+let currentToken = null;
+
+const client = new CleanGoAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth(() => currentToken || 'fallback-token')
+});
+
+// Token更新后，所有后续请求自动使用新token
+function updateToken(newToken: string) {
+  currentToken = newToken;
+}
+```
+
+#### 4. 异步Token获取（存储集成）
+```typescript
+const client = new CleanGoAPIClient({
+  baseUrl: 'https://api.example.com',
+  auth: new SimpleAuth(async () => {
+    // 从安全存储获取token
+    const token = await getTokenFromSecureStorage();
+    return token || await refreshTokenFromServer();
+  })
+});
+```
+
+#### 5. Paseto 认证
 ```typescript
 import { SimpleAuth } from 'proto2fetch/runtime';
 
@@ -419,7 +513,7 @@ const client = new CleanGoAPIClient({
 });
 ```
 
-#### 3. 自定义认证
+#### 6. 自定义认证
 ```typescript
 import { CustomAuth } from 'proto2fetch/runtime';
 
@@ -433,7 +527,7 @@ const client = new CleanGoAPIClient({
 });
 ```
 
-#### 4. 向后兼容（简单用法）
+#### 7. 向后兼容（简单用法）
 ```typescript
 const client = new CleanGoAPIClient({
   baseUrl: 'https://api.example.com',
@@ -447,6 +541,23 @@ const users = await client.getUsers({
   sort: [{ field: 'created_at', direction: 'desc' }]
 });
 ```
+
+### 🔧 客户端认证管理API
+
+#### 新增的客户端方法
+```typescript
+interface APIClient {
+  // 认证管理方法
+  updateAuthToken(token: string): void;        // 更新现有认证的token
+  updateAuthProvider(provider: AuthProvider): void; // 替换认证提供者
+  clearAuthToken(): void;                      // 清除认证
+}
+```
+
+#### 方法说明
+- **`updateAuthToken()`**: 优先更新现有认证实例的token，如果不支持则创建新的SimpleAuth实例
+- **`updateAuthProvider()`**: 完全替换认证提供者
+- **`clearAuthToken()`**: 清除所有认证信息
 
 ---
 

@@ -1,5 +1,5 @@
 // Runtime exports
-export { createAPIClient } from './client.js';
+export { createAPIClient, KyAPIClient } from './client.js';
 export type { APIClient } from './client.js';
 
 export { 

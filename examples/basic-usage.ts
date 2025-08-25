@@ -79,7 +79,7 @@ async function basicUsageExample(): Promise<void> {
     console.log('Login successful. Token expires at:', loginResponse.expiresAt);
 
     // Update client token
-    client.setAuthToken(loginResponse.token);
+    client.updateAuthToken(loginResponse.token);
 
     // Validate token
     const validateRequest: Types.ValidateTokenRequest = {

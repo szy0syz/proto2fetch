@@ -21,7 +21,7 @@ export class CleanGoAPIClient {
     this.config = config;
   }
 
-  setAuthToken(token: string): void {
+  updateAuthToken(token: string): void {
     if (!this.config.auth) {
       this.config.auth = { token };
     } else {

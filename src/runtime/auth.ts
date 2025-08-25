@@ -5,6 +5,9 @@ export interface AuthProvider {
   getAuthHeaders(): Record<string, string> | Promise<Record<string, string>>;
 }
 
+// Token provider for dynamic token management
+export type TokenProvider = string | (() => string | Promise<string>);
+
 // Legacy auth config for backward compatibility
 export interface AuthConfig {
   token?: string;
@@ -16,29 +19,63 @@ export interface AuthConfig {
  * Simple token authentication (Bearer, API Key, etc.)
  */
 export class SimpleAuth implements AuthProvider {
-  constructor(
-    private token: string,
-    private tokenType: string = 'Bearer'
-  ) {}
+  private tokenProvider: () => string | Promise<string>;
 
-  getAuthHeaders(): Record<string, string> {
+  constructor(
+    tokenOrProvider: TokenProvider,
+    private tokenType: string = 'Bearer'
+  ) {
+    if (typeof tokenOrProvider === 'string') {
+      // Store token as closure for consistency
+      let currentToken = tokenOrProvider;
+      this.tokenProvider = () => currentToken;
+      // Expose updateToken method via closure
+      (this as any).updateToken = (newToken: string) => {
+        currentToken = newToken;
+      };
+    } else {
+      this.tokenProvider = tokenOrProvider;
+    }
+  }
+
+  async getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await this.tokenProvider();
     return {
-      Authorization: `${this.tokenType} ${this.token}`
+      Authorization: `${this.tokenType} ${token}`
     };
   }
+
+  /**
+   * Update the token (only available when constructed with string token)
+   * This method is dynamically added in constructor for string tokens
+   */
+  updateToken?(newToken: string): void;
 }
 
 /**
  * JWT authentication with expiration checking
  */
 export class JWTAuth implements AuthProvider {
+  private tokenProvider: () => string | Promise<string>;
   private onExpired?: () => Promise<string> | string;
 
   constructor(
-    private token: string,
+    tokenOrProvider: TokenProvider,
     options: { onExpired?: () => Promise<string> | string } = {}
   ) {
     this.onExpired = options.onExpired;
+    
+    if (typeof tokenOrProvider === 'string') {
+      // Store token as closure for consistency
+      let currentToken = tokenOrProvider;
+      this.tokenProvider = () => currentToken;
+      // Expose updateToken method via closure
+      (this as any).updateToken = (newToken: string) => {
+        currentToken = newToken;
+      };
+    } else {
+      this.tokenProvider = tokenOrProvider;
+    }
   }
 
   async getAuthHeaders(): Promise<Record<string, string>> {
@@ -49,15 +86,30 @@ export class JWTAuth implements AuthProvider {
   }
 
   private async getValidToken(): Promise<string> {
-    if (JWTUtils.isTokenExpired(this.token)) {
+    const token = await this.tokenProvider();
+    
+    if (JWTUtils.isTokenExpired(token)) {
       if (this.onExpired) {
-        this.token = await this.onExpired();
+        const refreshedToken = await this.onExpired();
+        
+        // Update token if we're using string-based token provider
+        if (this.updateToken) {
+          this.updateToken(refreshedToken);
+        }
+        
+        return refreshedToken;
       } else {
         throw ErrorUtils.authError('JWT token expired and no refresh handler provided');
       }
     }
-    return this.token;
+    return token;
   }
+
+  /**
+   * Update the token (only available when constructed with string token)
+   * This method is dynamically added in constructor for string tokens
+   */
+  updateToken?(newToken: string): void;
 }
 
 /**
