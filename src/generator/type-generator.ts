@@ -285,7 +285,7 @@ export type SortBuilder<T> = {
 
     for (const field of message.fields) {
       const fieldName = this.toCamelCase(field.name);
-      const fieldType = this.mapProtobufTypeToTypeScript(field.type, false);
+      const fieldType = this.mapProtobufTypeToTypeScript(field.type, field.repeated);
       
       // Check if this field already has a suffix (Like, After, Before)
       const hasLikeSuffix = fieldName.endsWith('Like');

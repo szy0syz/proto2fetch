@@ -95,6 +95,34 @@ describe('TypeScriptTypeGenerator', () => {
       expect(result).toContain('timestampField: Date;');
     });
 
+    it('should handle repeated fields correctly', () => {
+      const schema: ParsedSchema = {
+        files: [{
+          package: 'test',
+          services: [],
+          messages: [
+            {
+              name: 'TestRepeated',
+              fields: [
+                { name: 'tenant_ids', type: 'uint64', repeated: true, optional: false, number: 1 },
+                { name: 'user_ids', type: 'int64', repeated: true, optional: false, number: 2 },
+                { name: 'tags', type: 'string', repeated: true, optional: false, number: 3 },
+                { name: 'scores', type: 'float', repeated: true, optional: false, number: 4 }
+              ]
+            }
+          ],
+          imports: []
+        }]
+      };
+
+      const result = generator.generateTypes(schema);
+      
+      expect(result).toContain('tenantIds: bigint[];'); // uint64 defaults to bigint
+      expect(result).toContain('userIds: bigint[];');   // int64 defaults to bigint
+      expect(result).toContain('tags: string[];');
+      expect(result).toContain('scores: number[];');
+    });
+
     it('should respect type mapping options', () => {
       const generatorWithOptions = new TypeScriptTypeGenerator({
         dateAsString: true,
@@ -172,6 +200,50 @@ describe('TypeScriptTypeGenerator', () => {
       expect(result).toContain('createdAtAfter(value: Date): this');
       expect(result).toContain('createdAtBefore(value: Date): this');
       expect(result).toContain('build(): UserFilter');
+    });
+
+    it('should handle repeated fields in filter builders correctly', () => {
+      const messages: ProtoMessage[] = [
+        {
+          name: 'TestFilter',
+          fields: [
+            { name: 'tenant_ids', type: 'uint64', repeated: true, optional: true, number: 1 },
+            { name: 'user_ids', type: 'int64', repeated: true, optional: true, number: 2 },
+            { name: 'tags', type: 'string', repeated: true, optional: true, number: 3 },
+            { name: 'scores', type: 'float', repeated: true, optional: true, number: 4 }
+          ]
+        }
+      ];
+
+      const result = generator.generateFilterBuilders(messages);
+      
+      expect(result).toContain('export class TestFilterBuilder');
+      expect(result).toContain('tenantIds(value: bigint[]): this');   // uint64[] -> bigint[]
+      expect(result).toContain('userIds(value: bigint[]): this');     // int64[] -> bigint[]
+      expect(result).toContain('tags(value: string[]): this');
+      expect(result).toContain('scores(value: number[]): this');      // float[] -> number[]
+      expect(result).toContain('build(): TestFilter');
+    });
+
+    it('should respect type mapping options in filter builders', () => {
+      const generatorWithOptions = new TypeScriptTypeGenerator({
+        bigintAsString: true
+      });
+
+      const messages: ProtoMessage[] = [
+        {
+          name: 'TestFilter',
+          fields: [
+            { name: 'tenant_ids', type: 'uint64', repeated: true, optional: true, number: 1 },
+            { name: 'user_ids', type: 'int64', repeated: true, optional: true, number: 2 }
+          ]
+        }
+      ];
+
+      const result = generatorWithOptions.generateFilterBuilders(messages);
+      
+      expect(result).toContain('tenantIds(value: string[]): this');  // uint64[] -> string[] (with option)
+      expect(result).toContain('userIds(value: string[]): this');    // int64[] -> string[] (with option)
     });
   });
 
