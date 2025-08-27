@@ -18,7 +18,9 @@ export class APIClientGenerator {
 
     // Generate main client class
     const allServices = schema.files.flatMap(file => file.services);
-    output += this.generateClientClass(allServices);
+    // Remove duplicate services based on service name and methods
+    const uniqueServices = this.removeDuplicateServices(allServices);
+    output += this.generateClientClass(uniqueServices);
     
     return output;
   }
@@ -235,6 +237,31 @@ import * as Types from './types.js';
 
   private toCamelCase(str: string): string {
     return str.charAt(0).toLowerCase() + str.slice(1).replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  }
+
+  private removeDuplicateServices(services: ProtoService[]): ProtoService[] {
+    const uniqueServicesMap = new Map<string, ProtoService>();
+    
+    for (const service of services) {
+      const serviceKey = service.name;
+      const existingService = uniqueServicesMap.get(serviceKey);
+      
+      if (!existingService) {
+        // First time seeing this service
+        uniqueServicesMap.set(serviceKey, service);
+      } else {
+        // Service already exists, merge methods if they're different
+        const existingMethodNames = new Set(existingService.methods.map(m => m.name));
+        const newMethods = service.methods.filter(m => !existingMethodNames.has(m.name));
+        
+        if (newMethods.length > 0) {
+          // Add new methods to existing service
+          existingService.methods.push(...newMethods);
+        }
+      }
+    }
+    
+    return Array.from(uniqueServicesMap.values());
   }
 
   generateHelperMethods(schema: ParsedSchema): string {

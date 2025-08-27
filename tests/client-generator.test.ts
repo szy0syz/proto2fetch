@@ -99,7 +99,9 @@ describe('APIClientGenerator', () => {
                 httpPath: '/api/v1/users/{id}'
               }
             ]
-          }]
+          }],
+          messages: [],
+          imports: []
         }]
       };
 
@@ -129,7 +131,9 @@ describe('APIClientGenerator', () => {
               httpMethod: 'GET',
               httpPath: '/api/v1/users'
             }]
-          }]
+          }],
+          messages: [],
+          imports: []
         }]
       };
 
@@ -153,7 +157,9 @@ describe('APIClientGenerator', () => {
               httpMethod: 'PUT',
               httpPath: '/api/v1/users/{id}'
             }]
-          }]
+          }],
+          messages: [],
+          imports: []
         }]
       };
 
@@ -177,7 +183,9 @@ describe('APIClientGenerator', () => {
               httpMethod: 'POST',
               httpPath: '/api/v1/user-accounts'
             }]
-          }]
+          }],
+          messages: [],
+          imports: []
         }]
       };
 
@@ -318,6 +326,104 @@ describe('APIClientGenerator', () => {
   });
 
   describe('edge cases', () => {
+    it('should handle duplicate services correctly', () => {
+      const schema: ParsedSchema = {
+        files: [
+          {
+            package: 'test1',
+            services: [{
+              name: 'TenantService',
+              description: 'Tenant management service',
+              methods: [
+                {
+                  name: 'CreateTenant',
+                  inputType: 'CreateTenantRequest',
+                  outputType: 'CreateTenantResponse',
+                  httpMethod: 'POST',
+                  httpPath: '/api/v1/tenants'
+                },
+                {
+                  name: 'UpdateTenant',
+                  inputType: 'UpdateTenantRequest',
+                  outputType: 'UpdateTenantResponse',
+                  httpMethod: 'PUT',
+                  httpPath: '/api/v1/tenants/{id}'
+                }
+              ]
+            }],
+            messages: [],
+            imports: []
+          },
+          {
+            package: 'test2',
+            services: [{
+              name: 'TenantService',
+              description: 'Duplicate tenant service',
+              methods: [
+                {
+                  name: 'CreateTenant',
+                  inputType: 'CreateTenantRequest',
+                  outputType: 'CreateTenantResponse',
+                  httpMethod: 'POST',
+                  httpPath: '/api/v1/tenants'
+                },
+                {
+                  name: 'UpdateTenant',
+                  inputType: 'UpdateTenantRequest',
+                  outputType: 'UpdateTenantResponse',
+                  httpMethod: 'PUT',
+                  httpPath: '/api/v1/tenants/{id}'
+                }
+              ]
+            }],
+            messages: [],
+            imports: []
+          },
+          {
+            package: 'test3',
+            services: [{
+              name: 'TenantService',
+              description: 'Third duplicate tenant service',
+              methods: [
+                {
+                  name: 'CreateTenant',
+                  inputType: 'CreateTenantRequest',
+                  outputType: 'CreateTenantResponse',
+                  httpMethod: 'POST',
+                  httpPath: '/api/v1/tenants'
+                },
+                {
+                  name: 'GetTenant', // Different method in this service
+                  inputType: 'GetTenantRequest',
+                  outputType: 'GetTenantResponse',
+                  httpMethod: 'GET',
+                  httpPath: '/api/v1/tenants/{id}'
+                }
+              ]
+            }],
+            messages: [],
+            imports: []
+          }
+        ]
+      };
+
+      const result = generator.generateClient(schema);
+
+      // Should only generate each method once, despite duplicate services
+      const createTenantMatches = result.match(/async createTenant\(/g);
+      const updateTenantMatches = result.match(/async updateTenant\(/g);
+      const getTenantMatches = result.match(/async getTenant\(/g);
+
+      expect(createTenantMatches?.length).toBe(1);
+      expect(updateTenantMatches?.length).toBe(1);
+      expect(getTenantMatches?.length).toBe(1);
+
+      // Ensure all methods are present
+      expect(result).toContain('async createTenant(request: Types.CreateTenantRequest, options?: RequestOptions): Promise<Types.CreateTenantResponse>');
+      expect(result).toContain('async updateTenant(request: Types.UpdateTenantRequest, options?: RequestOptions): Promise<Types.UpdateTenantResponse>');
+      expect(result).toContain('async getTenant(request: Types.GetTenantRequest, options?: RequestOptions): Promise<Types.GetTenantResponse>');
+    });
+
     it('should handle empty services gracefully', () => {
       const schema: ParsedSchema = {
         files: [{
@@ -348,7 +454,9 @@ describe('APIClientGenerator', () => {
               httpMethod: 'PUT',
               httpPath: '/api/v1/users/{user_id}/resources/{resource_id}'
             }]
-          }]
+          }],
+          messages: [],
+          imports: []
         }]
       };
 
