@@ -8,7 +8,6 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
-      { text: 'API Reference', link: '/api/' },
       { text: 'Examples', link: '/examples/' }
     ],
 
@@ -27,14 +26,6 @@ export default defineConfig({
           { text: 'Code Generation', link: '/guide/code-generation' },
           { text: 'Authentication', link: '/guide/authentication' },
           { text: 'Error Handling', link: '/guide/error-handling' }
-        ]
-      },
-      {
-        text: 'API Reference',
-        items: [
-          { text: 'CLI Commands', link: '/api/cli' },
-          { text: 'Runtime API', link: '/api/runtime' },
-          { text: 'Configuration', link: '/api/configuration' }
         ]
       },
       {

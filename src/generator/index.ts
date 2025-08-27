@@ -171,10 +171,6 @@ const client = new ${this._options.clientName || 'APIClient'}({
 ${this.generateUsageExamples(allMethods.slice(0, 3))}
 \`\`\`
 
-## API Reference
-
-${this.generateAPIReference(allServices)}
-
 ## Configuration Options
 
 \`\`\`typescript
@@ -226,16 +222,6 @@ const result = await client.${methodName}(request);`;
     }).join('\n\n');
   }
 
-  private generateAPIReference(services: any[]): string {
-    return services.map(service => {
-      const methods = service.methods.map((method: any) => {
-        const methodName = this.toCamelCase(method.name);
-        return `- \`${methodName}()\` - ${method.description || method.summary || 'No description available'}`;
-      }).join('\n');
-      
-      return `### ${service.name}\n\n${methods}`;
-    }).join('\n\n');
-  }
 
   private toCamelCase(str: string): string {
     return str.charAt(0).toLowerCase() + str.slice(1).replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
