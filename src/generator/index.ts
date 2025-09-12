@@ -29,6 +29,7 @@ export class Proto2FetchGenerator {
     const typeMappingOptions: TypeMappingOptions = {
       dateAsString: this._options.dateType === 'string',
       bigintAsString: this._options.bigintType === 'string',
+      bigintAsNumber: this._options.bigintType === 'number',
       useOptionalForOptionalFields: true
     };
 

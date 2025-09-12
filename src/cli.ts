@@ -13,7 +13,7 @@ interface CLIOptions {
   generateFilterBuilders?: boolean;
   generateSortBuilders?: boolean;
   dateType?: 'Date' | 'string';
-  bigintType?: 'bigint' | 'string';
+  bigintType?: 'number' | 'bigint' | 'string';
   config?: string;
   help?: boolean;
   version?: boolean;
@@ -35,7 +35,7 @@ Options:
   --generate-filter-builders    Generate filter builder classes (default: true)
   --generate-sort-builders      Generate sort builder classes (default: true)
   --date-type <type>            Type for dates: Date|string (default: Date)
-  --bigint-type <type>          Type for bigints: bigint|string (default: string)
+  --bigint-type <type>          Type for bigints: number|bigint|string (default: number)
   --config <path>               Path to configuration file
   --help                        Show this help message
   --version                     Show version information
@@ -53,7 +53,7 @@ Configuration File:
     generateFilterBuilders: true,
     generateSortBuilders: true,
     dateType: 'Date',
-    bigintType: 'string'
+    bigintType: 'number'
   };
 
 Examples:
@@ -139,11 +139,11 @@ function parseArgs(args: string[]): CLIOptions {
         }
         break;
       case '--bigint-type':
-        if (nextArg === 'bigint' || nextArg === 'string') {
+        if (nextArg === 'number' || nextArg === 'bigint' || nextArg === 'string') {
           options.bigintType = nextArg;
           i++;
         } else {
-          console.error('Error: --bigint-type must be either "bigint" or "string"');
+          console.error('Error: --bigint-type must be "number", "bigint", or "string"');
           process.exit(1);
         }
         break;
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
     generateFilterBuilders: cliOptions.generateFilterBuilders ?? config.generateFilterBuilders ?? true,
     generateSortBuilders: cliOptions.generateSortBuilders ?? config.generateSortBuilders ?? true,
     dateType: cliOptions.dateType || config.dateType || 'Date',
-    bigintType: cliOptions.bigintType || config.bigintType || 'string'
+    bigintType: cliOptions.bigintType || config.bigintType || 'number'
   };
   
   // Validate options

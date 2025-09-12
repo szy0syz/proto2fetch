@@ -93,7 +93,13 @@ export class TypeScriptTypeGenerator {
         break;
       case 'int64':
       case 'uint64':
-        tsType = this.options.bigintAsString ? 'string' : 'bigint';
+        if (this.options.bigintAsString) {
+          tsType = 'string';
+        } else if (this.options.bigintAsNumber) {
+          tsType = 'number';
+        } else {
+          tsType = 'bigint';
+        }
         break;
       case 'bytes':
         tsType = 'Uint8Array';

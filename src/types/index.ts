@@ -135,7 +135,7 @@ export interface GeneratorOptions {
   generateFilterBuilders?: boolean;
   generateSortBuilders?: boolean;
   dateType?: 'Date' | 'string';
-  bigintType?: 'bigint' | 'string';
+  bigintType?: 'number' | 'bigint' | 'string';
 }
 
 export interface ProtoParseOptions {
@@ -149,6 +149,7 @@ export interface ProtoParseOptions {
 export interface TypeMappingOptions {
   dateAsString?: boolean;
   bigintAsString?: boolean;
+  bigintAsNumber?: boolean;
   useOptionalForOptionalFields?: boolean;
 }
 
