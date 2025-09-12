@@ -104,8 +104,14 @@ export class KyAPIClient implements APIClient {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
           // Handle array parameters
-          value.forEach((item) => {
-            params.append(key, String(item));
+          value.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              // For object arrays, use indexed flattening: sort[0].field=name&sort[0].direction=asc
+              this.flattenObject(item, `${key}[${index}]`, params);
+            } else {
+              // For primitive arrays, append as multiple values
+              params.append(key, String(item));
+            }
           });
         } else if (typeof value === 'object') {
           // Handle nested objects (flatten them)
@@ -213,7 +219,15 @@ export class KyAPIClient implements APIClient {
       
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
-          value.forEach(item => params.append(fullKey, String(item)));
+          value.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              // For object arrays, use indexed flattening: sort[0].field=name&sort[0].direction=asc
+              this.flattenObject(item, `${fullKey}[${index}]`, params);
+            } else {
+              // For primitive arrays, append as multiple values
+              params.append(fullKey, String(item));
+            }
+          });
         } else if (typeof value === 'object') {
           this.flattenObject(value, fullKey, params);
         } else {

@@ -23,7 +23,7 @@ export class SimpleAuth implements AuthProvider {
 
   constructor(
     tokenOrProvider: TokenProvider,
-    private tokenType: string = 'Bearer'
+    private _tokenType: string = 'Bearer'
   ) {
     if (typeof tokenOrProvider === 'string') {
       // Store token as closure for consistency
@@ -41,7 +41,7 @@ export class SimpleAuth implements AuthProvider {
   async getAuthHeaders(): Promise<Record<string, string>> {
     const token = await this.tokenProvider();
     return {
-      Authorization: `${this.tokenType} ${token}`
+      Authorization: `${this._tokenType} ${token}`
     };
   }
 
@@ -49,7 +49,7 @@ export class SimpleAuth implements AuthProvider {
    * Update the token (only available when constructed with string token)
    * This method is dynamically added in constructor for string tokens
    */
-  updateToken?(newToken: string): void;
+  updateToken?(_newToken: string): void;
 }
 
 /**
@@ -109,7 +109,7 @@ export class JWTAuth implements AuthProvider {
    * Update the token (only available when constructed with string token)
    * This method is dynamically added in constructor for string tokens
    */
-  updateToken?(newToken: string): void;
+  updateToken?(_newToken: string): void;
 }
 
 /**
@@ -117,11 +117,11 @@ export class JWTAuth implements AuthProvider {
  */
 export class CustomAuth implements AuthProvider {
   constructor(
-    private headerProvider: () => Record<string, string> | Promise<Record<string, string>>
+    private _headerProvider: () => Record<string, string> | Promise<Record<string, string>>
   ) {}
 
   getAuthHeaders(): Record<string, string> | Promise<Record<string, string>> {
-    return this.headerProvider();
+    return this._headerProvider();
   }
 }
 
