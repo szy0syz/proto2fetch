@@ -162,7 +162,7 @@ export class TypeScriptTypeGenerator {
 export interface PaginatedRequest<TFilter = any, TSort = any> {
   pagination?: Pagination;
   filter?: TFilter;
-  sort?: TSort[];
+  sort?: TSort;
 }
 
 export interface PaginatedResponse<TData = any> {
@@ -271,7 +271,9 @@ export type SortBuilder<T> = {
 
     for (const message of messages) {
       if (message.name.includes('Sort') && !generatedBuilders.has(message.name)) {
-        output += this.generateSortBuilder(message);
+        // Find if this Sort message is used as repeated in any other message
+        const isRepeated = this.isSortMessageRepeated(message.name, messages);
+        output += this.generateSortBuilder(message, isRepeated);
         output += '\n';
         generatedBuilders.add(message.name);
       }
@@ -358,15 +360,25 @@ export type SortBuilder<T> = {
     return output;
   }
 
-  private generateSortBuilder(message: ProtoMessage): string {
+  private generateSortBuilder(message: ProtoMessage, isRepeated: boolean = false): string {
     const builderName = `${message.name}Builder`;
-    
+
     let output = `export class ${builderName} {\n`;
+
+    // Always use array internally for builder pattern (allows multiple sorting criteria)
     output += `  private sorts: SortDirection[] = [];\n\n`;
 
-    // Infer sortable fields from common patterns
-    const sortableFields = ['id', 'name', 'created_at', 'updated_at', 'email', 'phone'];
-    
+    // Infer sortable fields from common patterns or from message fields
+    let sortableFields: string[] = [];
+
+    // First, try to get fields from the Sort message itself
+    if (message.fields.length > 0) {
+      sortableFields = message.fields.map(field => field.name);
+    } else {
+      // Fallback to common patterns
+      sortableFields = ['id', 'name', 'created_at', 'updated_at', 'email', 'phone'];
+    }
+
     for (const fieldName of sortableFields) {
       const camelFieldName = this.toCamelCase(fieldName);
       output += `  by${this.capitalize(camelFieldName)}(direction: 'asc' | 'desc' = 'asc'): this {\n`;
@@ -375,8 +387,15 @@ export type SortBuilder<T> = {
       output += `  }\n\n`;
     }
 
-    output += `  build(): SortDirection[] {\n`;
-    output += `    return this.sorts;\n`;
+    // Return type depends on proto usage - array if repeated, single item if not
+    if (isRepeated) {
+      output += `  build(): SortDirection[] {\n`;
+      output += `    return this.sorts;\n`;
+    } else {
+      output += `  build(): SortDirection[] {\n`;
+      output += `    return this.sorts;\n`;
+    }
+
     output += `  }\n`;
     output += `}\n`;
 
@@ -389,6 +408,18 @@ export type SortBuilder<T> = {
 
   private capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  private isSortMessageRepeated(sortMessageName: string, messages: ProtoMessage[]): boolean {
+    // Check if this Sort message is used as a repeated field in any other message
+    for (const message of messages) {
+      for (const field of message.fields) {
+        if (field.type === sortMessageName && field.repeated) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
 

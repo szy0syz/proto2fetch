@@ -300,7 +300,7 @@ export function createPagination(page: number = 1, size: number = 10): Types.Pag
 export function createPaginatedRequest<TFilter = any, TSort = any>(
   pagination?: Types.Pagination,
   filter?: TFilter,
-  sort?: TSort[]
+  sort?: TSort
 ): Types.PaginatedRequest<TFilter, TSort> {
   return {
     pagination: pagination || createPagination(),

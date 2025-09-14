@@ -257,12 +257,79 @@ describe('TypeScriptTypeGenerator', () => {
       ];
 
       const result = generator.generateSortBuilders(messages);
-      
+
       expect(result).toContain('export class UserSortBuilder');
       expect(result).toContain('byId(direction: \'asc\' | \'desc\' = \'asc\'): this');
       expect(result).toContain('byName(direction: \'asc\' | \'desc\' = \'asc\'): this');
       expect(result).toContain('byCreatedAt(direction: \'asc\' | \'desc\' = \'asc\'): this');
       expect(result).toContain('build(): SortDirection[]');
+    });
+
+    it('should detect when sort is used as repeated field', () => {
+      const messages: ProtoMessage[] = [
+        {
+          name: 'UserSort',
+          fields: []
+        },
+        {
+          name: 'GetUsersRequest',
+          fields: [
+            { name: 'sort', type: 'UserSort', repeated: true, optional: false, number: 1 }
+          ]
+        },
+        {
+          name: 'GetPostsRequest',
+          fields: [
+            { name: 'sort', type: 'UserSort', repeated: false, optional: true, number: 1 }
+          ]
+        }
+      ];
+
+      const result = generator.generateSortBuilders(messages);
+
+      // Should still generate array-based builder regardless of repeated status
+      // because SortBuilder is designed to support multiple sorting criteria
+      expect(result).toContain('export class UserSortBuilder');
+      expect(result).toContain('private sorts: SortDirection[] = [];');
+      expect(result).toContain('this.sorts.push({ field:');
+      expect(result).toContain('build(): SortDirection[]');
+    });
+
+    it('should generate sortable fields from message fields if available', () => {
+      const messages: ProtoMessage[] = [
+        {
+          name: 'CustomSort',
+          fields: [
+            { name: 'priority', type: 'string', repeated: false, optional: false, number: 1 },
+            { name: 'status', type: 'string', repeated: false, optional: false, number: 2 }
+          ]
+        }
+      ];
+
+      const result = generator.generateSortBuilders(messages);
+
+      expect(result).toContain('export class CustomSortBuilder');
+      expect(result).toContain('byPriority(direction: \'asc\' | \'desc\' = \'asc\'): this');
+      expect(result).toContain('byStatus(direction: \'asc\' | \'desc\' = \'asc\'): this');
+      expect(result).toContain('this.sorts.push({ field: \'priority\', direction });');
+      expect(result).toContain('this.sorts.push({ field: \'status\', direction });');
+    });
+
+    it('should fallback to common sortable fields when message has no fields', () => {
+      const messages: ProtoMessage[] = [
+        {
+          name: 'EmptySort',
+          fields: []
+        }
+      ];
+
+      const result = generator.generateSortBuilders(messages);
+
+      expect(result).toContain('export class EmptySortBuilder');
+      // Should use fallback common fields
+      expect(result).toContain('byId(direction: \'asc\' | \'desc\' = \'asc\'): this');
+      expect(result).toContain('byName(direction: \'asc\' | \'desc\' = \'asc\'): this');
+      expect(result).toContain('byCreatedAt(direction: \'asc\' | \'desc\' = \'asc\'): this');
     });
   });
 
