@@ -162,7 +162,7 @@ export class TypeScriptTypeGenerator {
 export interface PaginatedRequest<TFilter = any, TSort = any> {
   pagination?: Pagination;
   filter?: TFilter;
-  sort?: TSort[];
+  sort?: TSort;
 }
 
 export interface PaginatedResponse<TData = any> {

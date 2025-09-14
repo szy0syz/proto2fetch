@@ -91,17 +91,6 @@ export interface RequestOptions extends Omit<KyOptions, 'prefixUrl'> {
   skipAuth?: boolean;
 }
 
-export interface PaginatedRequest<T = any> {
-  pagination?: {
-    page: number;
-    size: number;
-  };
-  filter?: T;
-  sort?: Array<{
-    field: string;
-    direction: 'asc' | 'desc';
-  }>;
-}
 
 export interface PaginatedResponse<T = any> {
   data: T;

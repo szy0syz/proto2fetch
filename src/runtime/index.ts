@@ -28,7 +28,6 @@ export type {
   RetryHook,
   ErrorHook,
   ResponseHook,
-  PaginatedRequest,
   PaginatedResponse,
   ErrorDetail,
   APIErrorResponse
